@@ -1,7 +1,3 @@
-// Package netrc implements GNU .netrc specification.
-// This implementation is borrowed from the original implementation by the go authors.
-// See https://github.com/golang/go/blob/master/src/cmd/go/internal/auth/netrc.go
-// See https://www.gnu.org/software/inetutils/manual/html_node/The-_002enetrc-file.html
 package netrc
 
 import (
