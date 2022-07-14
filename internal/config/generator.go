@@ -30,9 +30,8 @@ var (
 	ErrUnexpectedResponseFormat = fmt.Errorf("unexpected response format")
 )
 
-type projectConf struct {
+type organizationConf struct {
 	Id   string `json:"id"`
-	Type string `json:"type"`
 	Name string `json:"name"`
 }
 
@@ -41,7 +40,6 @@ type BugsnagCLIConfig struct {
 	APIEndpoint  string
 	Login        string
 	Organization string
-	Project      string
 	Force        bool
 }
 
@@ -51,19 +49,19 @@ type BugsnagCLIConfigGenerator struct {
 	value  struct {
 		api_endpoint string
 		login        string
-		organization string
 		authType     bugsnag.AuthType
-		project      *projectConf
+		organization *organizationConf
 	}
-	bugsnagClient *bugsnag.Client
-	projectsMap   map[string]*projectConf
+	bugsnagClient           *bugsnag.Client
+	organizationsMap        map[string]*organizationConf
+	organizationSuggestions []string
 }
 
 // NewBugsnagCLIConfigGenerator creates a new Bugsnag CLI config.
 func NewBugsnagCLIConfigGenerator(cfg *BugsnagCLIConfig) *BugsnagCLIConfigGenerator {
 	gen := BugsnagCLIConfigGenerator{
-		usrCfg:      cfg,
-		projectsMap: make(map[string]*projectConf),
+		usrCfg:           cfg,
+		organizationsMap: make(map[string]*organizationConf),
 	}
 
 	return &gen
@@ -82,6 +80,9 @@ func (c *BugsnagCLIConfigGenerator) Generate() (string, error) {
 		return "", ErrSkip
 	}
 	if err := c.configureEndpointAndLoginDetails(); err != nil {
+		return "", err
+	}
+	if err := c.configureOrganizationDetails(); err != nil {
 		return "", err
 	}
 
@@ -205,6 +206,51 @@ func (c *BugsnagCLIConfigGenerator) verifyLoginDetails(api_endpoint, login strin
 	return nil
 }
 
+func (c *BugsnagCLIConfigGenerator) configureOrganizationDetails() error {
+	organization := c.usrCfg.Organization
+
+	if err := c.getOrganizationSuggestions(); err != nil {
+		return err
+	}
+
+	if c.usrCfg.Organization == "" {
+		organizationPrompt := survey.Select{
+			Message: "Default organization:",
+			Help:    "This is your organization id that you want to access by default when using the cli.",
+			Options: c.organizationSuggestions,
+		}
+		if err := survey.AskOne(&organizationPrompt, &organization, survey.WithValidator(survey.Required)); err != nil {
+			return err
+		}
+	}
+	c.value.organization = c.organizationsMap[strings.ToLower(organization)]
+
+	if c.value.organization == nil {
+		return fmt.Errorf("organization not found\n  Please check the organization id and try again")
+	}
+
+	return nil
+}
+
+func (c *BugsnagCLIConfigGenerator) getOrganizationSuggestions() error {
+	s := cmdutil.Info("Fetching organizations...")
+	defer s.Stop()
+
+	organizations, err := c.bugsnagClient.Organization()
+	if err != nil {
+		return err
+	}
+	for _, organization := range organizations {
+		c.organizationsMap[strings.ToLower(organization.Name)] = &organizationConf{
+			Id:   organization.Id,
+			Name: organization.Name,
+		}
+		c.organizationSuggestions = append(c.organizationSuggestions, organization.Name)
+	}
+
+	return nil
+}
+
 func (c *BugsnagCLIConfigGenerator) write(path string) (string, error) {
 	config := viper.New()
 	config.AddConfigPath(path)
@@ -213,6 +259,7 @@ func (c *BugsnagCLIConfigGenerator) write(path string) (string, error) {
 
 	config.Set("api_endpoint", c.value.api_endpoint)
 	config.Set("login", c.value.login)
+	config.Set("organization", c.value.organization)
 
 	if err := config.WriteConfig(); err != nil {
 		return "", err

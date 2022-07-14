@@ -15,3 +15,10 @@ type AuthType string
 func (at AuthType) String() string {
 	return string(at)
 }
+
+type Organization struct {
+	Id          string `json:"id"`
+	Name        string `json:"name"`
+	Slug        string `json:"slug"`
+	ProjectsUrl string `json:"projects_url"`
+}

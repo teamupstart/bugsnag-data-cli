@@ -11,6 +11,7 @@ import (
 
 	initCmd "github.com/teamupstart/bugsnag-data-cli/internal/cmd/init"
 	"github.com/teamupstart/bugsnag-data-cli/internal/cmd/me"
+	"github.com/teamupstart/bugsnag-data-cli/internal/cmd/organization"
 	"github.com/teamupstart/bugsnag-data-cli/internal/cmd/version"
 	"github.com/teamupstart/bugsnag-data-cli/internal/cmdutil"
 	bugsnagConfig "github.com/teamupstart/bugsnag-data-cli/internal/config"
@@ -87,9 +88,9 @@ func NewCmdRoot() *cobra.Command {
 		fmt.Sprintf("Config file (default is %s/%s/%s.yml)", configHome, bugsnagConfig.Dir, bugsnagConfig.FileName),
 	)
 	cmd.PersistentFlags().StringP(
-		"project", "p", "",
+		"organization", "o", "",
 		fmt.Sprintf(
-			"Bugsnag project to look into (defaults to %s/%s/%s.yml)",
+			"Bugsnag organization to look into (defaults to %s/%s/%s.yml)",
 			configHome, bugsnagConfig.Dir, bugsnagConfig.FileName,
 		),
 	)
@@ -98,7 +99,7 @@ func NewCmdRoot() *cobra.Command {
 	cmd.SetHelpFunc(helpFunc)
 
 	_ = viper.BindPFlag("config", cmd.PersistentFlags().Lookup("config"))
-	_ = viper.BindPFlag("project.key", cmd.PersistentFlags().Lookup("project"))
+	_ = viper.BindPFlag("organization.id", cmd.PersistentFlags().Lookup("organization"))
 	_ = viper.BindPFlag("debug", cmd.PersistentFlags().Lookup("debug"))
 
 	addChildCommands(&cmd)
@@ -110,6 +111,7 @@ func addChildCommands(cmd *cobra.Command) {
 	cmd.AddCommand(
 		initCmd.NewCmdInit(),
 		me.NewCmdMe(),
+		organization.NewCmdOrganization(),
 		version.NewCmdVersion(),
 	)
 }

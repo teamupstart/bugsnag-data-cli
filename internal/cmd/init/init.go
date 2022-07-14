@@ -16,6 +16,7 @@ import (
 type initParams struct {
 	api_endpoint string
 	login        string
+	organization string
 	force        bool
 }
 
@@ -33,6 +34,7 @@ func NewCmdInit() *cobra.Command {
 
 	cmd.Flags().String("api_endpoint", "", "Link to your bugsnag api endpoint")
 	cmd.Flags().String("login", "", "Bugsnag api token")
+	cmd.Flags().String("organization", "", "Your default organization id")
 	cmd.Flags().Bool("force", false, "Forcefully override existing config if it exists")
 
 	return &cmd
@@ -45,12 +47,16 @@ func parseFlags(flags query.FlagParser) *initParams {
 	login, err := flags.GetString("login")
 	cmdutil.ExitIfError(err)
 
+	organization, err := flags.GetString("organization")
+	cmdutil.ExitIfError(err)
+
 	force, err := flags.GetBool("force")
 	cmdutil.ExitIfError(err)
 
 	return &initParams{
 		api_endpoint: api_endpoint,
 		login:        login,
+		organization: organization,
 		force:        force,
 	}
 }
@@ -60,9 +66,10 @@ func initialize(cmd *cobra.Command, _ []string) {
 
 	c := bugsnagConfig.NewBugsnagCLIConfigGenerator(
 		&bugsnagConfig.BugsnagCLIConfig{
-			APIEndpoint: params.api_endpoint,
-			Login:       params.login,
-			Force:       params.force,
+			APIEndpoint:  params.api_endpoint,
+			Login:        params.login,
+			Organization: params.organization,
+			Force:        params.force,
 		},
 	)
 
