@@ -19,7 +19,7 @@ func TestMe(t *testing.T) {
 		if unexpectedStatusCode {
 			w.WriteHeader(400)
 		} else {
-			resp, err := ioutil.ReadFile("./testdata/user_me.json")
+			resp, err := ioutil.ReadFile("./fixtures/user_me.json")
 			assert.NoError(t, err)
 
 			w.Header().Set("Content-Type", "application/json")
